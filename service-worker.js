@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/voicemail/precache-manifest.b2031cdff8e4c511e6fd7fc8b130afe8.js"
+  "/voicemail/precache-manifest.662411d671dbd2f5c616a964bb3b33c4.js"
 );
 
 self.addEventListener('message', (event) => {
