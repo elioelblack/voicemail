@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import './tablemail.module.css';
 import Grid from '@material-ui/core/Grid';
 import { lighten, makeStyles } from '@material-ui/core/styles';
 import Paper from '@material-ui/core/Paper';
@@ -22,6 +23,14 @@ import Switch from '@material-ui/core/Switch';
 import DeleteIcon from '@material-ui/icons/Delete';
 import FilterListIcon from '@material-ui/icons/FilterList';
 import vmService from '../Services/voiceMailService';
+import InputLabel from '@material-ui/core/InputLabel';
+import MenuItem from '@material-ui/core/MenuItem';
+import FormHelperText from '@material-ui/core/FormHelperText';
+import FormControl from '@material-ui/core/FormControl';
+import Select from '@material-ui/core/Select';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import LinearProgress from '@material-ui/core/LinearProgress';
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -31,6 +40,19 @@ const useStyles = makeStyles((theme) => ({
         padding: theme.spacing(2),
         textAlign: 'center',
         color: theme.palette.text.secondary,
+    },
+    formControl: {
+        margin: theme.spacing(1),
+        minWidth: 120,
+      },
+      selectEmpty: {
+        marginTop: theme.spacing(2),
+      },
+    progress: {
+    width: '100%',
+    '& > * + *': {
+        marginTop: theme.spacing(2),
+    },
     },
 }));
 const useStyles2 = makeStyles((theme) => ({
@@ -57,26 +79,6 @@ const useStyles2 = makeStyles((theme) => ({
     },
 }));
 /*/////////Definicion de la tabla//////////**/
-function createData(name, calories, fat, carbs, protein) {
-    return { name, calories, fat, carbs, protein };
-}
-
-const rowsddddd = [
-    createData('Cupcake', 305, 3.7, 67, 4.3),
-    createData('Donut', 452, 25.0, 51, 4.9),
-    createData('Eclair', 262, 16.0, 24, 6.0),
-    createData('Frozen yoghurt', 159, 6.0, 24, 4.0),
-    createData('Gingerbread', 356, 16.0, 49, 3.9),
-    createData('Honeycomb', 408, 3.2, 87, 6.5),
-    createData('Ice cream sandwich', 237, 9.0, 37, 4.3),
-    createData('Jelly Bean', 375, 0.0, 94, 0.0),
-    createData('KitKat', 518, 26.0, 65, 7.0),
-    createData('Lollipop', 392, 0.2, 98, 0.0),
-    createData('Marshmallow', 318, 0, 81, 2.0),
-    createData('Nougat', 360, 19.0, 9, 37.0),
-    createData('Oreo', 437, 18.0, 63, 4.0),
-];
-
 function descendingComparator(a, b, orderBy) {
     if (b[orderBy] < a[orderBy]) {
         return -1;
@@ -125,6 +127,7 @@ function EnhancedTableHead(props) {
                         checked={rowCount > 0 && numSelected === rowCount}
                         onChange={onSelectAllClick}
                         inputProps={{ 'aria-label': 'select all desserts' }}
+                        style={{display:'none'}}
                     />
                 </TableCell>
                 {headCells.map((headCell) => (
@@ -177,6 +180,7 @@ const useToolbarStyles = makeStyles((theme) => ({
             },
     title: {
         flex: '1 1 100%',
+        color:'#F5F5F5'
     },
 }));
 
@@ -189,6 +193,7 @@ const EnhancedTableToolbar = (props) => {
             className={clsx(classes.root, {
                 [classes.highlight]: numSelected > 0,
             })}
+            style={{backgroundColor:'darkcyan'}}
         >
             {numSelected > 0 ? (
                 <Typography className={classes.title} color="inherit" variant="subtitle1" component="div">
@@ -197,7 +202,7 @@ const EnhancedTableToolbar = (props) => {
             ) : (
                     <Typography className={classes.title} variant="h6" id="tableTitle" component="div">
                         VoiceMail
-          </Typography>
+                    </Typography>
                 )}
 
             {numSelected > 0 ? (
@@ -233,13 +238,41 @@ export default class Tablemail extends Component {
             dense: false,
             rowsPerPage: 5,
             dataVoicemail:[],
-            dataArray:{}
+            dataArray:{},
+            isLoading:false
         }
+    }
+    succsessMessage = (alert) => {
+        toast.success(alert, {
+            position: toast.POSITION.TOP_CENTER,
+        });
+    }
+    errorMessage = (alert) => {
+        toast.error(alert, {
+            position: toast.POSITION.TOP_CENTER,
+        });
     }
     //*********Llamadas http****** */
     
     componentDidMount(){
+        this.setState({isLoading:true});
         this.callApi();
+        
+    }
+    callMessageId(id,data){
+        vmService.retrieveMessageId(id,data)       
+        .then(
+            (result)=>{
+                //this.callApi();
+                this.setState({isLoading:false});
+                this.succsessMessage("Modified Succsessfuly");
+            }
+        ).catch(
+            err=>{
+                this.setState({isLoading:false});
+                this.errorMessage("Oh! There is an error: "+err);
+            }
+        )
     }
     callApi(){
         vmService.retrieveAllVmBoxes()
@@ -256,6 +289,7 @@ export default class Tablemail extends Component {
                     let sec = ((cn.length/1000));
                     tempArray.push(                        
                         {
+                            media_id:cn.media_id,
                             "folder":cn.folder,
                             "from":cn.caller_id_name,
                             "to":String(cn.to).substring(0,String(cn.to).indexOf("@")),
@@ -267,13 +301,15 @@ export default class Tablemail extends Component {
             )
                     
                     this.setState({dataVoicemail:tempArray});
+                    this.setState({isLoading:false});
                     //console.log(this.state.dataVoicemail[0].folder);
             },
             // Nota: es importante manejar errores aquí y no en 
             // un bloque catch() para que no interceptemos errores
             // de errores reales en los componentes.
             (error) => {
-            console.error(error);
+                this.setState({isLoading:false});
+                console.error(error);
             }
         )
     }
@@ -341,6 +377,30 @@ export default class Tablemail extends Component {
             dense: event.target.checked
         })
     };
+    handleChangeStatus(e){
+        this.setState({isLoading:true});
+        let data = {data:{"folder":e.target.value}};        
+        let temp = [];
+        this.state.dataVoicemail.map(
+            dt=>{
+                temp.push(
+                    {
+                        media_id:dt.media_id,
+                        folder:(dt.media_id===e.target.name)?e.target.value:dt.folder,
+                        from:dt.from,
+                        to:dt.to,
+                        duration:dt.duration
+                        
+                }
+                    
+                );
+                
+            }
+        );
+        this.callMessageId(e.target.name,data);
+        document.getElementsByName(e.target.name)[0].previousSibling.style.color="green";
+        this.setState({dataVoicemail:temp});
+    }
 
     isSelected = (name) => this.state.selected.indexOf(name) !== -1;
 
@@ -349,11 +409,19 @@ export default class Tablemail extends Component {
         return (
             <>
                 <h1>Welcome</h1>
+                {
+                    (this.state.isLoading &&
+                        <div className={useStyles.progress}>
+                            <LinearProgress />
+                            <LinearProgress color="secondary" />
+                        </div>)
+                }
+                
                 <div className={useStyles.root}>
                     <Grid container spacing={1}>
                         <Grid item xs={12} sm={12}>
                             <div className={useStyles2.root}>
-                                <Paper className={useStyles2.paper}>
+                                <Paper className={useStyles2.paper} >
                                     <EnhancedTableToolbar numSelected={this.state.selected.length} />
                                     <TableContainer>
                                         <Table
@@ -367,7 +435,7 @@ export default class Tablemail extends Component {
                                                 numSelected={this.state.selected.length}
                                                 order={this.state.order}
                                                 orderBy={this.state.orderBy}
-                                                onSelectAllClick={this.handleSelectAllClick.bind(this)}
+                                                //onSelectAllClick={this.handleSelectAllClick.bind(this)}
                                                 onRequestSort={this.handleRequestSort.bind(this)}
                                                 rowCount={this.state.dataVoicemail.length}
                                             />
@@ -375,27 +443,46 @@ export default class Tablemail extends Component {
                                                 {stableSort(this.state.dataVoicemail, getComparator(this.state.order, this.state.orderBy))
                                                     .slice(this.state.page * this.state.rowsPerPage, this.state.page * this.state.rowsPerPage + this.state.rowsPerPage)
                                                     .map((row, index) => {
-                                                        const isItemSelected = this.isSelected(this.state.dataVoicemail.folder);
+                                                        const isItemSelected = this.isSelected(row.media_id);
                                                         const labelId = `enhanced-table-checkbox-${index}`;
                                                         
                                                         return (
                                                             <TableRow
                                                                 hover
-                                                                onClick={(event) => this.handleClick(event, this.state.dataVoicemail.folder)}
+                                                                //onClick={(event) => this.handleClick(event, row.media_id)}
                                                                 role="checkbox"
                                                                 aria-checked={isItemSelected}
                                                                 tabIndex={-1}
-                                                                key={this.state.dataVoicemail.folder}
+                                                                key={row.media_id}
                                                                 selected={isItemSelected}
                                                             >
                                                                 <TableCell padding="checkbox">
                                                                     <Checkbox
+                                                                        style={{display:'none'}}
                                                                         checked={isItemSelected}
                                                                         inputProps={{ 'aria-labelledby': labelId }}
                                                                     />
                                                                 </TableCell>
                                                                 <TableCell component="th" id={labelId} scope="row" padding="none">
-                                                                    {row.folder}
+                                                                <FormControl className={useStyles.formControl}>
+                                                                    <InputLabel id="demo-simple-select-helper-label">Status</InputLabel>
+                                                                    <Select
+                                                                    labelId="demo-simple-select-helper-label"
+                                                                    id="demo-simple-select-helper"
+                                                                    name={row.media_id}//This is id.
+                                                                    value={row.folder}
+                                                                    selected={row.folder}
+                                                                    onChange={this.handleChangeStatus.bind(this)}
+                                                                    inputProps={this.state.isLoading?{ readOnly:  true }:''}
+                                                                    >                                                                    
+                                                                    <MenuItem value={"new"}>New</MenuItem>
+                                                                    <MenuItem value={"deleted"}>Deleted</MenuItem>
+                                                                    <MenuItem value={"saved"}>Saved</MenuItem>
+                                                                    </Select>
+                                                                    <FormHelperText>{this.state.messageResult}</FormHelperText>
+                                                                </FormControl>
+                                                                    
+                                                                    
                                                                 </TableCell>
                                                                 <TableCell align="right">{row.from}</TableCell>
                                                                 <TableCell align="right">{row.to}</TableCell>
@@ -428,6 +515,7 @@ export default class Tablemail extends Component {
                             </div>
                         </Grid>
                     </Grid>
+                    <ToastContainer/>
                 </div>
             </>
         )
