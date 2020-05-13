@@ -31,6 +31,12 @@ import Select from '@material-ui/core/Select';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import LinearProgress from '@material-ui/core/LinearProgress';
+import Button from '@material-ui/core/Button';
+import Dialog from '@material-ui/core/Dialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import Input from '@material-ui/core/Input';
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -41,6 +47,16 @@ const useStyles = makeStyles((theme) => ({
         textAlign: 'center',
         color: theme.palette.text.secondary,
     },
+    alert: {
+        width: '100%',
+        '& > * + *': {
+          marginTop: theme.spacing(2),
+        },
+      },
+    container_dialog: {
+        display: 'flex',
+        flexWrap: 'wrap',
+      },
     formControl: {
         margin: theme.spacing(1),
         minWidth: 120,
@@ -239,7 +255,10 @@ export default class Tablemail extends Component {
             rowsPerPage: 5,
             dataVoicemail:[],
             dataArray:{},
-            isLoading:false
+            isLoading:false,
+            open:false,
+            voicemailSelected:'new',
+            errorMessage:''
         }
     }
     succsessMessage = (alert) => {
@@ -256,7 +275,8 @@ export default class Tablemail extends Component {
     
     componentDidMount(){
         this.setState({isLoading:true});
-        this.callApi();
+        this.handleClickOpen();
+        //this.callApi();
         
     }
     callMessageId(id,data){
@@ -265,12 +285,18 @@ export default class Tablemail extends Component {
             (result)=>{
                 //this.callApi();
                 this.setState({isLoading:false});
+                this.setState({
+                    errorMessage:""
+                })
                 this.succsessMessage("Modified Succsessfuly");
             }
         ).catch(
             err=>{
                 this.setState({isLoading:false});
                 this.errorMessage("Oh! There is an error: "+err);
+                this.setState({
+                    errorMessage:"CORS ERROR: please install extension Acces control Origin: CORS."
+                })
             }
         )
     }
@@ -401,6 +427,35 @@ export default class Tablemail extends Component {
         document.getElementsByName(e.target.name)[0].previousSibling.style.color="green";
         this.setState({dataVoicemail:temp});
     }
+    handleChange = (e) => {
+        this.setState({
+            voicemailSelected:e.target.value
+        })
+    };
+    
+    handleClickOpen = () => {
+        this.callApi();
+        this.setState({open:true});
+    };
+    
+    handleClose = () => {
+        this.selectVoicemail();
+        this.setState({open:false});
+    };
+    selectVoicemail(){
+        let temp = [];
+        this.state.dataVoicemail.map(
+            dt=>{
+                if(dt.folder===this.state.voicemailSelected){
+                    temp.push(dt);
+                }
+            }
+        )
+        this.setState({
+            dataVoicemail:temp
+        })
+    }
+    
 
     isSelected = (name) => this.state.selected.indexOf(name) !== -1;
 
@@ -408,7 +463,50 @@ export default class Tablemail extends Component {
         let emptyRows = this.state.rowsPerPage - Math.min(this.state.rowsPerPage, this.state.dataVoicemail.length - this.state.page * this.state.rowsPerPage);
         return (
             <>
+                
+                    {
+                        (this.state.errorMessage!==""&&
+                        <div style={{marginTop:15}} className="alert alert-danger" role="alert">
+                        {this.state.errorMessage}
+                        </div>)
+                    }                               
+                
                 <h1>Welcome</h1>
+                <Grid container spacing={1}>
+                    <Grid item xs={12} sm={12}>
+                    <div>
+                    <Button variant="contained" color="primary" onClick={this.handleClickOpen}>Select voicemail</Button>
+                    <Dialog disableBackdropClick disableEscapeKeyDown open={this.state.open} onClose={this.handleClose}>
+                        <DialogTitle>Select voicemail to open</DialogTitle>
+                        <DialogContent>
+                        <form className={useStyles.container_dialog}>
+                            <FormControl className={useStyles.formControl} style={{width:'100%'}}>
+                            <Select
+                                native
+                                value={this.state.voicemailSelected}
+                                onChange={this.handleChange}
+                                input={<Input id="demo-dialog-native" />}
+                            >
+                                
+                                <option value={"new"}>New</option>
+                                <option value={"saved"}>Saved</option>
+                                <option value={"deleted"}>Deleted</option>
+                            </Select>
+                            </FormControl>                            
+                        </form>
+                        </DialogContent>
+                        <DialogActions>
+                        <Button disabled onClick={this.handleClose} color="primary">
+                            Cancel
+                        </Button>
+                        <Button onClick={this.handleClose} color="primary">
+                            Ok
+                        </Button>
+                        </DialogActions>
+                    </Dialog>
+                    </div>
+                    </Grid>
+                </Grid>
                 {
                     (this.state.isLoading &&
                         <div className={useStyles.progress}>
