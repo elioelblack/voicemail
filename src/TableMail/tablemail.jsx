@@ -129,7 +129,7 @@ const headCells = [
 ];
 
 function EnhancedTableHead(props) {
-    const { classes, onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
+    const {  onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } = props;
     const createSortHandler = (property) => (event) => {
         onRequestSort(event, property);
     };
@@ -310,7 +310,7 @@ export default class Tablemail extends Component {
             let tempArray=[];
             this.state.dataArray.data.map(
                 
-                (cn,ix) =>{
+                cn =>{
                     //format time, I think is mileseconds, it is no in documentation                                       
                     let sec = ((cn.length/1000));
                     tempArray.push(                        
